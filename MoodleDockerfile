@@ -1,0 +1,39 @@
+FROM php:8.3-apache
+
+ENV MOODLE_VERSION=MOODLE_405_STABLE
+
+# Install required packages
+RUN apt-get update && \
+    apt-get install -y unzip git curl libzip-dev libjpeg-dev libpng-dev \
+    libfreetype6-dev libicu-dev libxml2-dev libpq-dev && \
+    docker-php-ext-configure gd --with-freetype --with-jpeg && \
+    docker-php-ext-install mysqli zip gd intl soap exif pgsql pdo_pgsql opcache
+
+# Enable Apache rewrite
+RUN a2enmod rewrite
+
+# Download Moodle
+WORKDIR /var/www
+RUN git clone git://git.moodle.org/moodle.git && \
+    cd moodle && git checkout $MOODLE_VERSION && \
+    cp -r moodle/* /var/www/html
+
+# Copy plugins into Moodle
+COPY plugins/local/* /moodle/local/
+COPY plugins/mod/* /moodle/mod/
+COPY plugins/question/type/* /moodle/question/type/
+
+# Automatische installatie via CLI script
+COPY install-moodle.sh /install-moodle.sh
+RUN chmod +x /install-moodle.sh
+
+# Stel rechten in
+RUN mkdir -p /var/www/moodledata && \
+    chown -R www-data:www-data /var/www && \
+    chmod -R 755 /var/www
+
+WORKDIR /var/www/html
+EXPOSE 80
+
+CMD ["/install-moodle.sh"]
+

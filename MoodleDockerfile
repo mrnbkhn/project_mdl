@@ -5,7 +5,7 @@ ENV MOODLE_VERSION=MOODLE_405_STABLE
 # Install required packages
 RUN apt-get update && \
     apt-get install -y unzip git curl libzip-dev libjpeg-dev libpng-dev \
-    libfreetype6-dev libicu-dev libxml2-dev libpq-dev && \
+    libfreetype6-dev libicu-dev libxml2-dev libpq-dev postgresql-client && \
     docker-php-ext-configure gd --with-freetype --with-jpeg && \
     docker-php-ext-install mysqli zip gd intl soap exif pgsql pdo_pgsql opcache
 
@@ -13,15 +13,16 @@ RUN apt-get update && \
 RUN a2enmod rewrite
 
 # Download Moodle
-WORKDIR /var/www
+WORKDIR /var/www/html
+
 RUN git clone git://git.moodle.org/moodle.git && \
-    cd moodle && git checkout $MOODLE_VERSION && \
-    cp -r moodle/* /var/www/html
+    cd moodle && \
+    git checkout MOODLE_405_STABLE
 
 # Copy plugins into Moodle
-COPY plugins/local/* /moodle/local/
-COPY plugins/mod/* /moodle/mod/
-COPY plugins/question/type/* /moodle/question/type/
+COPY plugins/local/* /var/www/html/moodle/local/
+COPY plugins/mod/* /var/www/html/moodle/mod/
+COPY plugins/question/type/* /var/www/html/moodle/question/type/
 
 # Automatische installatie via CLI script
 COPY install-moodle.sh /install-moodle.sh
